@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchImages } from '../Services/Api';
 import css from './App.module.css';
 import Searchbar from './Searchbar/Searchbar';
@@ -7,130 +7,98 @@ import Button from './Button/Button';
 import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
 
-class App extends Component {
-  state = {
-    images: [],
-    topic: '',
-    page: 1,
-    totalHits: 500,
-    perPage: 12,
-    isLoading: false,
-    error: null,
-    showModal: false,
-    imgLargeSrc: '',
-    imgAlt: '',
-  };
+const perPage = 12;
 
-  loadImages = async () => {
-    this.setState({ isLoading: true });
-    try {
-      const { topic, page, perPage } = this.state;
+export default function App() {
+  let [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  let [page, setPage] = useState(1);
+  let [totalHits, setTotalHits] = useState(0);
+  let [isLoading, setIsLoading] = useState(false);
+  const [isOpenModal, setIsOpenModal] = useState(false)
+  const [imgLargeSrc, setImgLargeSrc] = useState(null);
+  const [imgAlt, setImgAlt] = useState(null);
 
-      const response = await fetchImages(topic, page, perPage);
-
-      this.setState({
-        images: response.hits,
-        error: null,
-        totalHits: response.totalHits,
-      });
-    } catch (error) {
-      this.setState({ error: error });
-      throw new Error(error);
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
-
-  loadMoreImages = async () => {
-    this.setState({ isLoading: true });
-    try {
-      const { topic, page, perPage } = this.state;
-
-      const response = await fetchImages(topic, page, perPage);
-
-      this.setState(prevState => {
-        return {
-          images: [...prevState.images, ...response.hits],
-          error: null,
-        };
-      });
-    } catch (error) {
-      this.setState({ error: error });
-      throw new Error(error);
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
-
-  handleFormSubmit = topic => {
-    this.setState({ topic: topic, page: 1, images: [] });
-  };
-
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
-
-  componentDidUpdate(_, prevState) {
-    if (prevState.topic !== this.state.topic ||
-      prevState.page !== this.state.page) {
-      this.loadMoreImages();
-    }
+  const loadImages = (response) => {
+    setImages(() => images = response.hits)
+    setTotalHits(() => totalHits = response.totalHits)
+  }
+  const loadMoreImages = (response) => {
+    setImages((images) => [...images, ...response.hits]);
   }
 
-  handleshowModal = event => {
-    const imgAlt = event.target.alt;
-    const imgLargeSrc = event.target.srcset;
-    this.setState({
-      showModal: true,
-      imgAlt: imgAlt,
-      imgLargeSrc: imgLargeSrc,
-    });
+  useEffect(() => {
+    if (query === '') return
+
+    async function fetchData() {
+      try {
+        setIsLoading(true);
+        const response = await fetchImages(query, page);
+
+        if (page === 1) {
+          loadImages(response);
+        }
+
+        if (page >= 2) {
+          loadMoreImages(response)
+        }
+      } catch (error) {
+        throw new Error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [query, page])
+
+  const handleFormSubmit = newQuery => {
+    setQuery(() => newQuery);
+    setPage(() => 1);
+    setImages(() => []);
   };
 
-  onModalClose = () => {
-    this.setState({
-      showModal: false,
-      imgAlt: '',
-      imgLargeSrc: '',
-    });
+  const handleLoadMore = () => {
+    setPage(() => page + 1)
   };
 
-  render() {
-    const {
-      images,
-      isLoading,
-      showModal,
-      imgAlt,
-      imgLargeSrc,
-      page,
-      perPage,
-      totalHits,
-    } = this.state;
-    return (
-      <div className={css.App}>
-        <Searchbar
-          onSubmit={this.handleFormSubmit}
+  const handleshowModal = event => {
+    setImgAlt(() => event.target.alt);
+    setImgLargeSrc(() => event.target.srcset);
+    setIsOpenModal(() => !isOpenModal);
+  };
+  const onKeyPress = event => {
+    if (event.keyCode === 27) {
+      onModalClose()
+    }
+  };
+
+  const onModalClose = () => {
+    setImgAlt(() => '');
+    setImgLargeSrc(() => '');
+    setIsOpenModal(() => !isOpenModal);
+  };
+  return (
+    <div className={css.App}>
+      <Searchbar
+        onSubmit={handleFormSubmit}
+      />
+      <ImageGallery images={images} handleshowModal={handleshowModal} />
+      <Loader isLoading={isLoading} />
+
+      {images.length > 0 && page * perPage < totalHits && (
+        <Button
+          buttonText={isLoading ? 'Loading...' : 'Load More'}
+          handleLoadMore={handleLoadMore}
         />
-        <ImageGallery images={images} handleshowModal={this.handleshowModal} />
-        <Loader isLoading={isLoading} />
-
-        {images.length > 0 && page * perPage < totalHits && (
-          <Button
-            buttonText={isLoading ? 'Loading...' : 'Load More'}
-            handleLoadMore={this.handleLoadMore}
-          />
-        )}
-        {showModal && (
-          <Modal
-            imgAlt={imgAlt}
-            imgLargeSrc={imgLargeSrc}
-            onKeyPress={this.onKeyPress}
-            onModalClose={this.onModalClose}
-          />
-        )}
-      </div>
-    );
-  }
+      )}
+      {isOpenModal && (
+        <Modal
+          imgAlt={imgAlt}
+          imgLargeSrc={imgLargeSrc}
+          onKeyPress={onKeyPress}
+          onModalClose={onModalClose}
+        />
+      )}
+    </div>
+  )
 }
-
-export default App;
