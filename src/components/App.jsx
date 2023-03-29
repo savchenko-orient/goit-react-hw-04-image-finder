@@ -10,6 +10,7 @@ import Modal from './Modal/Modal';
 const perPage = 12;
 
 export default function App() {
+
   let [images, setImages] = useState([]);
   const [query, setQuery] = useState('');
   let [page, setPage] = useState(1);
