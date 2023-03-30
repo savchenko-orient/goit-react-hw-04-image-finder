@@ -35,7 +35,7 @@ export default function App() {
         }
 
         if (page >= 2) {
-          setImages((images) => [...images, ...response.hits]);
+          setImages([...images, ...response.hits]);
         }
       } catch (error) {
         throw new Error(error);
@@ -47,19 +47,20 @@ export default function App() {
   }, [query, page])
 
   const handleFormSubmit = newQuery => {
-    setQuery(() => newQuery);
-    setPage(() => 1);
-    setImages(() => []);
+    setQuery(newQuery);
+    setPage(1);
+    setImages([]);
   };
 
   const handleLoadMore = () => {
-    setPage(() => page + 1)
+    setPage(page + 1)
   };
 
   const handleshowModal = event => {
-    setImgAlt(() => event.target.alt);
-    setImgLargeSrc(() => event.target.srcset);
-    setIsOpenModal(() => !isOpenModal);
+    const { alt, srcset } = event.target;
+    setImgAlt(alt);
+    setImgLargeSrc(srcset);
+    setIsOpenModal(!isOpenModal);
   };
   const onKeyPress = event => {
     if (event.keyCode === 27) {
@@ -68,9 +69,9 @@ export default function App() {
   };
 
   const onModalClose = () => {
-    setImgAlt(() => '');
-    setImgLargeSrc(() => '');
-    setIsOpenModal(() => !isOpenModal);
+    setImgAlt('');
+    setImgLargeSrc('');
+    setIsOpenModal(!isOpenModal);
   };
   return (
     <div className={css.App}>
