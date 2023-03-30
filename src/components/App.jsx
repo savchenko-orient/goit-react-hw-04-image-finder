@@ -20,7 +20,6 @@ export default function App() {
   const [imgLargeSrc, setImgLargeSrc] = useState(null);
   const [imgAlt, setImgAlt] = useState(null);
 
-
   useEffect(() => {
     if (query === '') return
 
@@ -44,6 +43,7 @@ export default function App() {
       }
     }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, page])
 
   const handleFormSubmit = newQuery => {
